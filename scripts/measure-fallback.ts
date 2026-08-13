@@ -1,10 +1,3 @@
-/**
- * Measures fallback correctness and failover latency overhead against real,
- * live providers. Forces the primary provider (first in PROVIDER_PRIORITY)
- * into a 500 via the fault injector, fires N real requests, and reports
- * how many succeeded via fallback plus the latency delta vs. a normal-path
- * baseline measured immediately before.
- */
 import { writeFileSync } from "node:fs";
 import { redis } from "../src/redis/client.js";
 import { buildProviderRegistry } from "../src/providers/registry.js";
@@ -21,7 +14,7 @@ const N = 10;
 async function run() {
   await redis.flushdb();
   const registry = buildProviderRegistry(redis);
-  const cacheStore = new CacheStore(redis, 1); // effectively-disabled cache so every request is a real call
+  const cacheStore = new CacheStore(redis, 1);
   const latencyTracker = new LatencyTracker(redis);
   const healthTracker = new HealthTracker(redis, 5);
   const strategy = new StaticPriorityStrategy(providerPriority);
@@ -31,7 +24,6 @@ async function run() {
   console.log(`Primary provider under test: ${primary}`);
   console.log(`Providers configured: ${[...registry.keys()].join(", ")}`);
 
-  // --- Baseline: N requests with no fault, primary path ---
   const baselineLatencies: number[] = [];
   for (let i = 0; i < N; i++) {
     const start = Date.now();
@@ -43,7 +35,6 @@ async function run() {
   }
   const baselineAvg = baselineLatencies.reduce((a, b) => a + b, 0) / baselineLatencies.length;
 
-  // --- Fault-injected: force primary to fail, N requests, expect fallback success ---
   await setFault(redis, primary, "error_5xx");
 
   let successCount = 0;

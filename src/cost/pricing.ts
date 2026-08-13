@@ -1,16 +1,5 @@
 import { TokenUsage } from "../providers/types.js";
 
-/**
- * Manually-maintained pricing snapshot, $ per 1,000,000 tokens.
- * NOT fetched live from providers — see README "Known Limitations".
- *
- * Sources checked 2026-08-13:
- *  - Groq (console.groq.com/docs/models): llama-3.1-8b-instant $0.05 / $0.08 per 1M in/out
- *  - Google (ai.google.dev/gemini-api/docs/pricing): Gemini 3.5 Flash-Lite $0.30 / $2.50 per 1M in/out
- *    (gemini-flash-lite-latest currently resolves to gemini-3.5-flash-lite)
- *  - OpenRouter: google/gemma-4-26b-a4b-it:free is a $0-cost free-tier model
- *    (confirmed via live API response `cost: 0` on every call in this session)
- */
 export interface ModelPricing {
   inputPerMillion: number;
   outputPerMillion: number;
@@ -42,13 +31,6 @@ export function computeCostUsd(provider: string, model: string, usage: TokenUsag
   return inputCost + outputCost;
 }
 
-/**
- * Pre-call budget reservation estimate: since the eventual provider isn't
- * known until routing runs, this prices the whole estimated token count at
- * the (usually pricier) output rate for the configured primary provider —
- * a deliberately conservative over-estimate. It's reconciled to the real
- * cost via BudgetEnforcer.adjust() once the actual provider/usage is known.
- */
 export function estimateRequestCostUsd(provider: string, model: string, estimatedTotalTokens: number): number {
   const pricing = getPricing(provider, model);
   return (estimatedTotalTokens / 1_000_000) * pricing.outputPerMillion;

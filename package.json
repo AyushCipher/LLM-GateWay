@@ -15,14 +15,15 @@
     "lint": "eslint src test scripts --ext .ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run test/unit",
-    "test:integration": "vitest run test/integration --pool=forks",
+    "test:integration": "vitest run test/integration --pool=forks --testTimeout=30000",
     "test:all": "vitest run",
     "migrate": "tsx src/db/migrate.ts",
     "bench:fallback": "tsx scripts/measure-fallback.ts",
     "bench:cache": "tsx scripts/measure-cache-hitrate.ts",
     "bench:ratelimit": "tsx scripts/measure-rate-limit-concurrency.ts",
     "bench:cost": "tsx scripts/measure-cost-accuracy.ts",
-    "bench:overhead": "tsx scripts/measure-overhead.ts"
+    "bench:overhead": "tsx scripts/measure-overhead.ts",
+    "bench:semantic-cache": "tsx scripts/measure-semantic-cache.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

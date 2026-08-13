@@ -1,9 +1,3 @@
-/**
- * Proves the Redis-Lua rate limiter enforces its cap exactly under real
- * concurrency: fires many concurrent requests at a single key via
- * Promise.all against live Redis and checks that exactly `limit` are
- * allowed, no more, no less. Repeated across several trials and limits.
- */
 import { writeFileSync } from "node:fs";
 import { redis } from "../src/redis/client.js";
 import { RateLimiter } from "../src/rateLimit/limiter.js";

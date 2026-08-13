@@ -51,7 +51,7 @@ describe("RateLimiter concurrency correctness (real Redis)", () => {
     const limitTokens = 1000;
     const key = "race-key-tokens";
     const reservationSize = 50;
-    const concurrency = 40; // 40 * 50 = 2000, double the budget
+    const concurrency = 40;
 
     const results = await Promise.all(
       Array.from({ length: concurrency }, () => limiter.reserveTokens(key, reservationSize, limitTokens, 60)),
@@ -61,7 +61,6 @@ describe("RateLimiter concurrency correctness (real Redis)", () => {
     const totalReserved = allowedCount * reservationSize;
 
     expect(totalReserved).toBeLessThanOrEqual(limitTokens);
-    // With a budget of 1000 and 50-token reservations, exactly 20 should fit.
     expect(allowedCount).toBe(20);
   });
 
@@ -69,7 +68,7 @@ describe("RateLimiter concurrency correctness (real Redis)", () => {
     const key = "adjust-key";
     const limitTokens = 1000;
     await limiter.reserveTokens(key, 100, limitTokens, 60);
-    await limiter.adjustTokens(key, 100, 40); // actual usage was lower than estimate
+    await limiter.adjustTokens(key, 100, 40);
 
     const remainingRaw = await redis.get(`ratelimit:tok:${key}`);
     expect(Number(remainingRaw)).toBe(40);

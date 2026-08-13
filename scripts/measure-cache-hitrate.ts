@@ -1,10 +1,3 @@
-/**
- * Measures actual cache hit-rate against real providers under a mixed
- * workload: a small pool of prompts repeated with a skewed (Zipf-like)
- * distribution, interleaved with one-off novel prompts, then shuffled so
- * repeats and novel requests are interspersed like real traffic rather
- * than grouped together.
- */
 import { writeFileSync } from "node:fs";
 import { redis } from "../src/redis/client.js";
 import { buildProviderRegistry } from "../src/providers/registry.js";
@@ -22,8 +15,8 @@ const REPEATED_POOL = [
   "What is the chemical symbol for water?",
   "How many days are in a week?",
 ];
-const REPEAT_COUNTS = [8, 6, 5, 4, 3]; // Zipf-ish: most common prompt repeated 8x, etc.
-const NOVEL_COUNT = 12; // one-off prompts that will never repeat
+const REPEAT_COUNTS = [8, 6, 5, 4, 3];
+const NOVEL_COUNT = 12;
 
 function buildWorkload(): string[] {
   const workload: string[] = [];
@@ -33,7 +26,6 @@ function buildWorkload(): string[] {
   for (let i = 0; i < NOVEL_COUNT; i++) {
     workload.push(`Novel one-off prompt number ${i}: give a one-word answer to 2+${i}.`);
   }
-  // Shuffle so repeats are interspersed with novel prompts, not grouped.
   for (let i = workload.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [workload[i], workload[j]] = [workload[j]!, workload[i]!];
@@ -51,7 +43,7 @@ async function run() {
   const router = new Router(registry, cacheStore, latencyTracker, healthTracker, { static_priority: strategy });
 
   const workload = buildWorkload();
-  const expectedHits = REPEAT_COUNTS.reduce((sum, c) => sum + (c - 1), 0); // first occurrence of each is always a miss
+  const expectedHits = REPEAT_COUNTS.reduce((sum, c) => sum + (c - 1), 0);
 
   let hits = 0;
   let misses = 0;

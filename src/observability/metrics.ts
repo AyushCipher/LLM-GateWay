@@ -27,6 +27,13 @@ export const fallbackTotal = new Counter({
   registers: [registry],
 });
 
+export const semanticCacheTotal = new Counter({
+  name: "gateway_semantic_cache_total",
+  help: "Semantic cache lookups by outcome",
+  labelNames: ["outcome"] as const, // outcome: hit | miss
+  registers: [registry],
+});
+
 export const providerLatencyHistogram = new Histogram({
   name: "gateway_provider_latency_ms",
   help: "Provider call latency in milliseconds",

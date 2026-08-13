@@ -3,8 +3,9 @@ info:
   title: LLM Gateway API
   version: 1.0.0
   description: >
-    Multi-provider LLM routing gateway with fallback, exact-match caching,
-    cost tracking, per-key budgets, and atomic rate limiting.
+    Multi-provider LLM routing gateway with fallback, exact-match and
+    embedding-based semantic caching, streaming responses, cost tracking,
+    per-key budgets, and atomic rate limiting.
 servers:
   - url: http://localhost:8787
 components:
@@ -35,6 +36,7 @@ components:
         temperature: { type: number, minimum: 0, maximum: 2 }
         maxTokens: { type: integer, minimum: 1, maximum: 4096 }
         routingStrategy: { type: string, enum: [static_priority, latency_based] }
+        stream: { type: boolean, default: false, description: "If true, responds as text/event-stream instead of a single JSON body — see the /v1/chat/completions description." }
     RouteAttempt:
       type: object
       properties:
@@ -57,6 +59,7 @@ components:
             completionTokens: { type: integer }
             totalTokens: { type: integer }
         cacheHit: { type: boolean }
+        cacheType: { type: string, enum: [exact, semantic], nullable: true, description: "Which cache layer served this response, if any." }
         costUsd: { type: number }
         latencyMs: { type: integer }
         routing:
@@ -96,6 +99,17 @@ paths:
   /v1/chat/completions:
     post:
       summary: Unified chat completion across all configured providers, with automatic fallback and caching.
+      description: >
+        With `stream: false` (default), responds with a single ChatResponse
+        JSON body. With `stream: true`, responds `Content-Type:
+        text/event-stream`: zero or more `data: {"delta": "..."}` chunk
+        events, followed by exactly one terminal event — either `data:
+        {"done": true, provider, model, usage, cacheHit, cacheType, costUsd,
+        latencyMs, routing}` on success, or `data: {"error": "...",
+        attempts}` on failure. Fallback between providers only happens
+        before the first chunk of a given provider's stream is forwarded to
+        the client; once any content has been sent, a later failure ends
+        the stream with an `error` event rather than silently retrying.
       security: [{ ApiKeyAuth: [] }]
       requestBody:
         required: true
@@ -104,14 +118,16 @@ paths:
             schema: { $ref: '#/components/schemas/ChatRequest' }
       responses:
         "200":
-          description: Successful completion (cache hit or live provider call)
+          description: Successful completion (non-streaming) or an SSE stream (see description above)
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ChatResponse' }
+            text/event-stream:
+              schema: { type: string, description: "Newline-delimited `data: {...}` SSE events, see description." }
         "401": { description: Missing or invalid API key }
         "402": { description: Budget cap exceeded (hard_stop mode) }
         "429": { description: Rate limit exceeded (requests/min or tokens/min) }
-        "502": { description: All configured providers failed for this request }
+        "502": { description: All configured providers failed for this request (non-streaming only; the streaming equivalent is an SSE `error` event with a 200 status, since headers are already committed by the time routing can fail) }
   /v1/usage:
     get:
       summary: Cumulative cost and token usage for the authenticated key over a time window

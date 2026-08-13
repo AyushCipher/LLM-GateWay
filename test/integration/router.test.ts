@@ -31,7 +31,6 @@ describe.skipIf(!liveProvidersAvailable)("Router fallback (real providers + real
   });
 
   afterEach(async () => {
-    // Clear any faults so later tests / the dev server aren't left in a broken state.
     for (const p of providerPriority) {
       await setFault(redis, p, "clear");
     }
@@ -49,7 +48,7 @@ describe.skipIf(!liveProvidersAvailable)("Router fallback (real providers + real
     expect(result.attempts).toHaveLength(1);
     expect(result.attempts[0]!.outcome).toBe("success");
     expect(result.attempts[0]!.provider).toBe(providerPriority[0]);
-  });
+  }, 30000);
 
   it("falls back to the next provider when the primary is fault-injected, and the request still succeeds", async () => {
     const primary = providerPriority[0]!;

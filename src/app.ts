@@ -14,7 +14,9 @@ import { LatencyTracker } from "./observability/latencyTracker.js";
 import { HealthTracker } from "./routing/health.js";
 import { StaticPriorityStrategy } from "./routing/strategies/staticPriority.js";
 import { LatencyBasedStrategy } from "./routing/strategies/latencyBased.js";
-import { Router as GatewayRouter } from "./routing/router.js";
+import { Router as GatewayRouter, SemanticCacheDeps } from "./routing/router.js";
+import { SemanticCacheStore } from "./cache/semanticCache.js";
+import { embedText } from "./providers/embeddings.js";
 import { RateLimiter } from "./rateLimit/limiter.js";
 import { BudgetEnforcer } from "./cost/budget.js";
 import { CostTracker } from "./cost/costTracker.js";
@@ -28,7 +30,7 @@ import { createMetricsRouter } from "./api/routes/metricsRoutes.js";
 import { createAdminRouter } from "./api/routes/admin.js";
 import { createHealthRouter } from "./api/routes/health.js";
 import { logger } from "./observability/logger.js";
-import { providerPriority } from "./config/env.js";
+import { env, providerPriority } from "./config/env.js";
 import "./api/types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -42,7 +44,15 @@ export function createApp(redis: Redis, pool: pg.Pool) {
     static_priority: new StaticPriorityStrategy(providerPriority),
     latency_based: new LatencyBasedStrategy(latencyTracker),
   };
-  const gatewayRouter = new GatewayRouter(registry, cacheStore, latencyTracker, healthTracker, strategies);
+  const semanticCache: SemanticCacheDeps | undefined =
+    env.SEMANTIC_CACHE_ENABLED && env.GEMINI_API_KEY
+      ? {
+          store: new SemanticCacheStore(pool, env.CACHE_TTL_SECONDS, env.SEMANTIC_CACHE_SIMILARITY_THRESHOLD),
+          embed: (text: string) => embedText(env.GEMINI_API_KEY, env.EMBEDDING_MODEL, text),
+        }
+      : undefined;
+
+  const gatewayRouter = new GatewayRouter(registry, cacheStore, latencyTracker, healthTracker, strategies, semanticCache);
   const rateLimiter = new RateLimiter(redis);
   const budgetEnforcer = new BudgetEnforcer(redis);
   const costTracker = new CostTracker(pool);
@@ -59,7 +69,6 @@ export function createApp(redis: Redis, pool: pg.Pool) {
   const openapiDoc = yaml.load(readFileSync(openapiPath, "utf8")) as object;
   app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapiDoc));
 
-  // Auth is registered path-scoped before the routers that actually handle those paths.
   app.use("/v1/chat/completions", apiKeyAuth);
   app.use("/v1/usage", apiKeyAuth);
   app.use("/v1/keys", adminAuth);

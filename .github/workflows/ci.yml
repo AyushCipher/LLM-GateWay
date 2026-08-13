@@ -20,7 +20,7 @@ jobs:
           --health-timeout 3s
           --health-retries 10
       postgres:
-        image: postgres:16-alpine
+        image: pgvector/pgvector:pg16
         env:
           POSTGRES_USER: gateway
           POSTGRES_PASSWORD: gateway
@@ -36,9 +36,6 @@ jobs:
     env:
       REDIS_URL: redis://localhost:6379
       DATABASE_URL: postgres://gateway:gateway@localhost:5432/llm_gateway
-      # No provider API keys are set here on purpose: live-provider tests and
-      # benchmark scripts are gated to skip automatically when keys are
-      # absent (see test/integration/router.test.ts) and are never run in CI.
       GROQ_API_KEY: ""
       GEMINI_API_KEY: ""
       OPENROUTER_API_KEY: ""

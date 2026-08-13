@@ -16,7 +16,6 @@ export function getTraceId(): string {
   return als.getStore()?.traceId ?? "no-trace";
 }
 
-/** Structured log line carrying the current trace ID through cache -> routing -> provider -> response. */
 export function traceLog(event: string, fields: Record<string, unknown> = {}): void {
   logger.info({ traceId: getTraceId(), event, ...fields });
 }

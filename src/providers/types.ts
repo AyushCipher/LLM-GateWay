@@ -1,3 +1,5 @@
+import type { StreamChunk } from "./streamTypes.js";
+
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -40,4 +42,5 @@ export interface ProviderAdapter {
   readonly name: string;
   readonly defaultModel: string;
   chat(request: UnifiedChatRequest, signal: AbortSignal): Promise<UnifiedChatResponse>;
+  chatStream(request: UnifiedChatRequest, signal: AbortSignal): AsyncGenerator<StreamChunk>;
 }

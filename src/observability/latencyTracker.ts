@@ -9,15 +9,6 @@ export interface Percentiles {
 
 const ZERO_PERCENTILES: Percentiles = { p50: 0, p95: 0, p99: 0, count: 0 };
 
-/**
- * Bounded rolling-window latency sample store, used by the latency-based
- * routing strategy to rank providers and by /metrics to report percentiles.
- * Percentiles are computed exactly from the last `maxSamples` values on
- * every read (nearest-rank method) — not an HDR histogram or a running
- * approximation, which is fine at this sample size but wouldn't scale to
- * high cardinality without a real histogram implementation (see README
- * limitations).
- */
 export class LatencyTracker {
   constructor(
     private readonly redis: Redis,

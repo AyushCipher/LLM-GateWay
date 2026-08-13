@@ -1,0 +1,136 @@
+{
+  "measuredAt": "2026-08-13T16:27:28.653Z",
+  "workloadSize": 17,
+  "distinctPromptStrings": 17,
+  "exactHits": 0,
+  "semanticHits": 7,
+  "misses": 10,
+  "overallHitRate": 0.4117647058823529,
+  "totalExpectedRepeats": 7,
+  "semanticHitsAmongExpectedRepeats": 7,
+  "semanticRecallOnRepeats": 1,
+  "predictionAccuracy": 1,
+  "similarityThresholdUsed": 0.8,
+  "perRequest": [
+    {
+      "prompt": "What is 2 plus 2?",
+      "topicId": "two-plus-two",
+      "expectedRepeat": false,
+      "cacheHit": false,
+      "cacheType": null
+    },
+    {
+      "prompt": "What is the boiling point of water in Celsius?",
+      "topicId": null,
+      "expectedRepeat": false,
+      "cacheHit": false,
+      "cacheType": null
+    },
+    {
+      "prompt": "How many days are in a week?",
+      "topicId": "days-in-a-week",
+      "expectedRepeat": false,
+      "cacheHit": false,
+      "cacheType": null
+    },
+    {
+      "prompt": "Who wrote Romeo and Juliet?",
+      "topicId": null,
+      "expectedRepeat": false,
+      "cacheHit": false,
+      "cacheType": null
+    },
+    {
+      "prompt": "Name one primary color.",
+      "topicId": "primary-color",
+      "expectedRepeat": false,
+      "cacheHit": false,
+      "cacheType": null
+    },
+    {
+      "prompt": "How many days does a week have?",
+      "topicId": "days-in-a-week",
+      "expectedRepeat": true,
+      "cacheHit": true,
+      "cacheType": "semantic"
+    },
+    {
+      "prompt": "Calculate 2+2.",
+      "topicId": "two-plus-two",
+      "expectedRepeat": true,
+      "cacheHit": true,
+      "cacheType": "semantic"
+    },
+    {
+      "prompt": "Which city is the capital of France?",
+      "topicId": "capital-of-france",
+      "expectedRepeat": false,
+      "cacheHit": false,
+      "cacheType": null
+    },
+    {
+      "prompt": "Name a programming language.",
+      "topicId": null,
+      "expectedRepeat": false,
+      "cacheHit": false,
+      "cacheType": null
+    },
+    {
+      "prompt": "What is the largest planet in the solar system?",
+      "topicId": null,
+      "expectedRepeat": false,
+      "cacheHit": false,
+      "cacheType": null
+    },
+    {
+      "prompt": "Give me the name of a primary color.",
+      "topicId": "primary-color",
+      "expectedRepeat": true,
+      "cacheHit": true,
+      "cacheType": "semantic"
+    },
+    {
+      "prompt": "How many continents are there?",
+      "topicId": null,
+      "expectedRepeat": false,
+      "cacheHit": false,
+      "cacheType": null
+    },
+    {
+      "prompt": "What is the capital of France?",
+      "topicId": "capital-of-france",
+      "expectedRepeat": true,
+      "cacheHit": true,
+      "cacheType": "semantic"
+    },
+    {
+      "prompt": "Tell me a primary color.",
+      "topicId": "primary-color",
+      "expectedRepeat": true,
+      "cacheHit": true,
+      "cacheType": "semantic"
+    },
+    {
+      "prompt": "What's the sum of 2 and 2?",
+      "topicId": "two-plus-two",
+      "expectedRepeat": true,
+      "cacheHit": true,
+      "cacheType": "semantic"
+    },
+    {
+      "prompt": "What is the chemical symbol for gold?",
+      "topicId": null,
+      "expectedRepeat": false,
+      "cacheHit": false,
+      "cacheType": null
+    },
+    {
+      "prompt": "Tell me France's capital city.",
+      "topicId": "capital-of-france",
+      "expectedRepeat": true,
+      "cacheHit": true,
+      "cacheType": "semantic"
+    }
+  ],
+  "note": "Every prompt string in this workload is unique (paraphrases, never literal duplicates), so exactHits is expected to be 0 — any hit at all can only come from the semantic-embedding layer, isolating what semantic caching specifically adds over exact-match alone."
+}

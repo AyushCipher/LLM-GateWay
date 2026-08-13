@@ -1,10 +1,5 @@
 import type { Redis } from "ioredis";
 
-/**
- * Minimal circuit breaker: a provider that just failed (real error or
- * fault-injected) is deprioritized — not excluded — for a short cooldown,
- * so routing doesn't keep leading with a provider that's currently down.
- */
 export class HealthTracker {
   constructor(
     private readonly redis: Redis,

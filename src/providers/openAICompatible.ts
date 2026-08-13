@@ -1,4 +1,6 @@
 import { ProviderAdapter, ProviderError, UnifiedChatRequest, UnifiedChatResponse } from "./types.js";
+import { StreamChunk } from "./streamTypes.js";
+import { parseSSE } from "./sse.js";
 
 interface OpenAICompatibleConfig {
   name: string;
@@ -18,10 +20,15 @@ interface OpenAIChatCompletionResponse {
   };
 }
 
-/**
- * Shared adapter for any provider that speaks the OpenAI chat-completions
- * wire format (Groq and OpenRouter both do).
- */
+interface OpenAIStreamChunk {
+  choices: { delta: { content?: string } }[];
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
 export class OpenAICompatibleAdapter implements ProviderAdapter {
   readonly name: string;
   readonly defaultModel: string;
@@ -37,24 +44,25 @@ export class OpenAICompatibleAdapter implements ProviderAdapter {
     this.extraHeaders = config.extraHeaders ?? {};
   }
 
-  async chat(request: UnifiedChatRequest, signal: AbortSignal): Promise<UnifiedChatResponse> {
-    const model = request.model === "default" || !request.model ? this.defaultModel : request.model;
+  private resolveModel(request: UnifiedChatRequest): string {
+    return request.model === "default" || !request.model ? this.defaultModel : request.model;
+  }
 
+  private headers(): Record<string, string> {
+    return {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${this.apiKey}`,
+      ...this.extraHeaders,
+    };
+  }
+
+  private async post(body: Record<string, unknown>, signal: AbortSignal): Promise<Response> {
     let res: Response;
     try {
       res = await fetch(`${this.baseUrl}/chat/completions`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${this.apiKey}`,
-          ...this.extraHeaders,
-        },
-        body: JSON.stringify({
-          model,
-          messages: request.messages,
-          temperature: request.temperature ?? 0.7,
-          max_tokens: request.maxTokens ?? 512,
-        }),
+        headers: this.headers(),
+        body: JSON.stringify(body),
         signal,
       });
     } catch (err) {
@@ -65,15 +73,30 @@ export class OpenAICompatibleAdapter implements ProviderAdapter {
     }
 
     if (!res.ok) {
-      const body = await res.text().catch(() => "");
+      const text = await res.text().catch(() => "");
       if (res.status === 429) {
-        throw new ProviderError(this.name, "rate_limit", `${this.name} rate limited: ${body}`);
+        throw new ProviderError(this.name, "rate_limit", `${this.name} rate limited: ${text}`);
       }
       if (res.status >= 500) {
-        throw new ProviderError(this.name, "server_error", `${this.name} server error ${res.status}: ${body}`);
+        throw new ProviderError(this.name, "server_error", `${this.name} server error ${res.status}: ${text}`);
       }
-      throw new ProviderError(this.name, "client_error", `${this.name} client error ${res.status}: ${body}`);
+      throw new ProviderError(this.name, "client_error", `${this.name} client error ${res.status}: ${text}`);
     }
+
+    return res;
+  }
+
+  async chat(request: UnifiedChatRequest, signal: AbortSignal): Promise<UnifiedChatResponse> {
+    const model = this.resolveModel(request);
+    const res = await this.post(
+      {
+        model,
+        messages: request.messages,
+        temperature: request.temperature ?? 0.7,
+        max_tokens: request.maxTokens ?? 512,
+      },
+      signal,
+    );
 
     const data = (await res.json()) as OpenAIChatCompletionResponse;
     const content = data.choices[0]?.message?.content ?? "";
@@ -90,5 +113,40 @@ export class OpenAICompatibleAdapter implements ProviderAdapter {
       },
       raw: data,
     };
+  }
+
+  async *chatStream(request: UnifiedChatRequest, signal: AbortSignal): AsyncGenerator<StreamChunk> {
+    const model = this.resolveModel(request);
+    const res = await this.post(
+      {
+        model,
+        messages: request.messages,
+        temperature: request.temperature ?? 0.7,
+        max_tokens: request.maxTokens ?? 512,
+        stream: true,
+        stream_options: { include_usage: true },
+      },
+      signal,
+    );
+
+    if (!res.body) {
+      throw new ProviderError(this.name, "network", `${this.name} streaming response had no body`);
+    }
+
+    for await (const payload of parseSSE(res.body)) {
+      const chunk = JSON.parse(payload) as OpenAIStreamChunk;
+      const delta = chunk.choices[0]?.delta?.content ?? "";
+      const usage = chunk.usage
+        ? {
+            promptTokens: chunk.usage.prompt_tokens,
+            completionTokens: chunk.usage.completion_tokens,
+            totalTokens: chunk.usage.total_tokens,
+          }
+        : undefined;
+
+      if (delta || usage) {
+        yield { delta, usage };
+      }
+    }
   }
 }

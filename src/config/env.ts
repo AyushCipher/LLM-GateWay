@@ -14,6 +14,13 @@ const envSchema = z.object({
 
   CACHE_TTL_SECONDS: z.coerce.number().default(300),
 
+  EMBEDDING_MODEL: z.string().default("gemini-embedding-001"),
+  SEMANTIC_CACHE_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
+  SEMANTIC_CACHE_SIMILARITY_THRESHOLD: z.coerce.number().min(0).max(1).default(0.8),
+
   DEFAULT_REQUESTS_PER_MINUTE: z.coerce.number().default(60),
   DEFAULT_TOKENS_PER_MINUTE: z.coerce.number().default(40000),
 

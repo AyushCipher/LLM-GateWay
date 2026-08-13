@@ -1,4 +1,6 @@
 import { ProviderAdapter, ProviderError, UnifiedChatRequest, UnifiedChatResponse } from "./types.js";
+import { StreamChunk } from "./streamTypes.js";
+import { parseSSE } from "./sse.js";
 
 interface GeminiResponse {
   candidates?: {
@@ -22,13 +24,15 @@ export class GeminiAdapter implements ProviderAdapter {
     this.defaultModel = defaultModel;
   }
 
-  async chat(request: UnifiedChatRequest, signal: AbortSignal): Promise<UnifiedChatResponse> {
-    const model = request.model === "default" || !request.model ? this.defaultModel : request.model;
+  private resolveModel(request: UnifiedChatRequest): string {
+    return request.model === "default" || !request.model ? this.defaultModel : request.model;
+  }
 
+  private buildBody(request: UnifiedChatRequest): Record<string, unknown> {
     const systemMessages = request.messages.filter((m) => m.role === "system");
     const conversation = request.messages.filter((m) => m.role !== "system");
 
-    const body = {
+    return {
       contents: conversation.map((m) => ({
         role: m.role === "assistant" ? "model" : "user",
         parts: [{ text: m.content }],
@@ -41,10 +45,12 @@ export class GeminiAdapter implements ProviderAdapter {
         maxOutputTokens: request.maxTokens ?? 512,
       },
     };
+  }
 
+  private async post(url: string, body: Record<string, unknown>, signal: AbortSignal): Promise<Response> {
     let res: Response;
     try {
-      res = await fetch(`${this.baseUrl}/${model}:generateContent?key=${this.apiKey}`, {
+      res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -68,6 +74,13 @@ export class GeminiAdapter implements ProviderAdapter {
       throw new ProviderError(this.name, "client_error", `gemini client error ${res.status}: ${bodyText}`);
     }
 
+    return res;
+  }
+
+  async chat(request: UnifiedChatRequest, signal: AbortSignal): Promise<UnifiedChatResponse> {
+    const model = this.resolveModel(request);
+    const res = await this.post(`${this.baseUrl}/${model}:generateContent?key=${this.apiKey}`, this.buildBody(request), signal);
+
     const data = (await res.json()) as GeminiResponse;
     const content = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
     const usage = data.usageMetadata ?? { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 };
@@ -83,5 +96,34 @@ export class GeminiAdapter implements ProviderAdapter {
       },
       raw: data,
     };
+  }
+
+  async *chatStream(request: UnifiedChatRequest, signal: AbortSignal): AsyncGenerator<StreamChunk> {
+    const model = this.resolveModel(request);
+    const res = await this.post(
+      `${this.baseUrl}/${model}:streamGenerateContent?alt=sse&key=${this.apiKey}`,
+      this.buildBody(request),
+      signal,
+    );
+
+    if (!res.body) {
+      throw new ProviderError(this.name, "network", "gemini streaming response had no body");
+    }
+
+    for await (const payload of parseSSE(res.body)) {
+      const data = JSON.parse(payload) as GeminiResponse;
+      const delta = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
+      const usage = data.usageMetadata
+        ? {
+            promptTokens: data.usageMetadata.promptTokenCount,
+            completionTokens: data.usageMetadata.candidatesTokenCount,
+            totalTokens: data.usageMetadata.totalTokenCount,
+          }
+        : undefined;
+
+      if (delta || usage) {
+        yield { delta, usage };
+      }
+    }
   }
 }

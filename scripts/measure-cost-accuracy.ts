@@ -1,11 +1,3 @@
-/**
- * Verifies the gateway's tracked cost matches an independently-computed
- * recomputation from the same provider-reported token usage. This is
- * honestly scoped: it validates the pricing arithmetic against what each
- * provider's API reports for usage, NOT against real provider billing
- * invoices (those aren't obtainable in this environment) — see README
- * "Known Limitations".
- */
 import { writeFileSync } from "node:fs";
 import { redis } from "../src/redis/client.js";
 import { buildProviderRegistry } from "../src/providers/registry.js";
@@ -18,7 +10,7 @@ import { computeCostUsd, getPricing } from "../src/cost/pricing.js";
 import { setFault } from "../src/providers/faultInjector.js";
 import { providerPriority } from "../src/config/env.js";
 
-const N = 9; // 3 per provider, cycling through priority order via fault injection
+const N = 9;
 
 function independentRecompute(provider: string, model: string, promptTokens: number, completionTokens: number): number {
   const pricing = getPricing(provider, model);
@@ -30,7 +22,7 @@ function independentRecompute(provider: string, model: string, promptTokens: num
 async function run() {
   await redis.flushdb();
   const registry = buildProviderRegistry(redis);
-  const cacheStore = new CacheStore(redis, 1); // effectively disabled so every request hits a real provider
+  const cacheStore = new CacheStore(redis, 1);
   const latencyTracker = new LatencyTracker(redis);
   const healthTracker = new HealthTracker(redis, 5);
   const strategy = new StaticPriorityStrategy(providerPriority);
@@ -50,8 +42,6 @@ async function run() {
   const skipped: { attempt: number; target: string; reason: string }[] = [];
 
   for (let i = 0; i < N; i++) {
-    // Force every provider except the one we want this request to land on, so
-    // the sample set covers all configured providers rather than only the primary.
     const target = available[i % available.length]!;
     for (const p of available) {
       await setFault(redis, p, p === target ? "clear" : "error_5xx");
@@ -75,9 +65,6 @@ async function run() {
         absDiff: Math.abs(gatewayCostUsd - recomputedCostUsd),
       });
     } catch (err) {
-      // A provider's own real upstream rate limit (e.g. OpenRouter's shared
-      // free-tier pool) can legitimately reject a request independent of our
-      // fault injection. Record it honestly instead of crashing the run.
       const reason = err instanceof AllProvidersFailedError ? err.message : String(err);
       skipped.push({ attempt: i, target, reason });
       console.warn(`Attempt #${i} (target=${target}) skipped: ${reason}`);

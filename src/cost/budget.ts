@@ -1,16 +1,5 @@
 import type { Redis } from "ioredis";
 
-/**
- * Same atomic-reserve-then-adjust pattern as the token-bucket rate limiter
- * (src/rateLimit/limiter.ts), applied to a running dollar total per key.
- * Uses INCRBYFLOAT (still a single atomic Redis command inside the script)
- * instead of INCRBY, and checks TTL==-1 to detect "first write this window"
- * rather than comparing floats for equality.
- *
- * Redis holds the fast atomic counter used for the pre-call gate; the
- * durable, queryable ledger is the Postgres `requests` table (see
- * costTracker.ts) used by GET /v1/usage.
- */
 const RESERVE_BUDGET_SCRIPT = `
 local newval = tonumber(redis.call('INCRBYFLOAT', KEYS[1], ARGV[3]))
 local ttl = redis.call('TTL', KEYS[1])
@@ -31,7 +20,7 @@ redis.call('INCRBYFLOAT', KEYS[1], tostring(delta))
 return redis.call('GET', KEYS[1])
 `;
 
-export const DEFAULT_BUDGET_WINDOW_SECONDS = 30 * 24 * 60 * 60; // rolling 30 days from first spend in the window
+export const DEFAULT_BUDGET_WINDOW_SECONDS = 30 * 24 * 60 * 60;
 
 export type BudgetMode = "hard_stop" | "soft_warn";
 
@@ -49,13 +38,6 @@ export class BudgetEnforcer {
     return `budget:spend:${apiKeyId}`;
   }
 
-  /**
-   * Reserves an estimated cost for the upcoming request. In hard_stop mode,
-   * a reservation that would exceed the cap is rejected before any provider
-   * call is made. In soft_warn mode the reservation always succeeds but the
-   * result still reports whether the cap was exceeded so callers can log a
-   * warning.
-   */
   async reserve(apiKeyId: string, estimatedCostUsd: number, capUsd: number, mode: BudgetMode): Promise<BudgetCheckResult> {
     const key = this.key(apiKeyId);
     const allowedRaw = (await this.redis.eval(
@@ -68,7 +50,6 @@ export class BudgetEnforcer {
     )) as number;
 
     if (mode === "soft_warn" && allowedRaw === 0) {
-      // Reservation was rolled back by the script; re-apply it unconditionally so spend still accrues.
       await this.redis.incrbyfloat(key, estimatedCostUsd);
     }
 

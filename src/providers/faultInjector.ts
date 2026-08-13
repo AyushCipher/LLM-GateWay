@@ -1,16 +1,11 @@
 import type { Redis } from "ioredis";
 import { ProviderAdapter, ProviderError, UnifiedChatRequest, UnifiedChatResponse } from "./types.js";
+import { StreamChunk } from "./streamTypes.js";
 
 export type FaultMode = "timeout" | "error_5xx" | "rate_limit";
 
 const FAULT_KEY_PREFIX = "fault:";
 
-/**
- * Decorator that lets tests/benchmarks deterministically force a provider
- * into a failure mode via a Redis flag, without touching real credentials
- * or waiting on an actual provider outage. This is what makes the fallback
- * benchmark provable rather than "looks right".
- */
 export class FaultInjectingAdapter implements ProviderAdapter {
   readonly name: string;
   readonly defaultModel: string;
@@ -37,6 +32,22 @@ export class FaultInjectingAdapter implements ProviderAdapter {
     }
 
     return this.inner.chat(request, signal);
+  }
+
+  async *chatStream(request: UnifiedChatRequest, signal: AbortSignal): AsyncGenerator<StreamChunk> {
+    const mode = (await this.redis.get(FAULT_KEY_PREFIX + this.name)) as FaultMode | null;
+
+    if (mode === "timeout") {
+      throw new ProviderError(this.name, "timeout", `[fault-injected] ${this.name} forced timeout`);
+    }
+    if (mode === "error_5xx") {
+      throw new ProviderError(this.name, "server_error", `[fault-injected] ${this.name} forced 500`);
+    }
+    if (mode === "rate_limit") {
+      throw new ProviderError(this.name, "rate_limit", `[fault-injected] ${this.name} forced 429`);
+    }
+
+    yield* this.inner.chatStream(request, signal);
   }
 }
 

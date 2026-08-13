@@ -1,14 +1,3 @@
-/**
- * Measures the latency the gateway itself adds vs. calling a provider
- * directly: same provider (the configured primary), same prompt shape,
- * cache-miss path (unique prompt per call so nothing is ever served from
- * cache), interleaved so network jitter affects both arms equally rather
- * than confounding a "first half vs second half" comparison.
- *
- * This is measured on one machine against the real provider over the real
- * internet — it is a local/synthetic measurement, not a production
- * network path (see README "Known Limitations").
- */
 import { writeFileSync } from "node:fs";
 import { redis } from "../src/redis/client.js";
 import { buildProviderRegistry } from "../src/providers/registry.js";
@@ -36,7 +25,7 @@ async function run() {
   const primary = providerPriority.find((p) => registry.has(p))!;
   const adapter = registry.get(primary)!;
 
-  const cacheStore = new CacheStore(redis, 1); // effectively disabled
+  const cacheStore = new CacheStore(redis, 1);
   const latencyTracker = new LatencyTracker(redis);
   const healthTracker = new HealthTracker(redis, 5);
   const strategy = new StaticPriorityStrategy(providerPriority);
@@ -46,12 +35,10 @@ async function run() {
   const gatewaySamples: number[] = [];
 
   for (let i = 0; i < N; i++) {
-    // Direct call
     const directStart = Date.now();
     await adapter.chat({ model: "default", messages: [{ role: "user", content: `Overhead direct #${i}: one word answer, name a color.` }], maxTokens: 10 }, AbortSignal.timeout(20000));
     directSamples.push(Date.now() - directStart);
 
-    // Through gateway (cache-miss path: unique prompt)
     const gatewayStart = Date.now();
     await router.route(
       { model: "default", messages: [{ role: "user", content: `Overhead gateway #${i}: one word answer, name a color.` }], maxTokens: 10 },

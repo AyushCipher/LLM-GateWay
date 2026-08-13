@@ -6,7 +6,6 @@ export function createTestPool(): pg.Pool {
   return new pg.Pool({ connectionString: env.DATABASE_URL, max: 5 });
 }
 
-/** Inserts a throwaway api_keys row (FK target for requests) and returns its id. */
 export async function insertTestApiKey(pool: pg.Pool, overrides: Partial<{ budgetUsdMonthly: number }> = {}): Promise<string> {
   const id = randomUUID();
   await pool.query(
