@@ -1,0 +1,177 @@
+{
+  "measuredAt": "2026-08-13T09:11:33.588Z",
+  "workloadSize": 38,
+  "distinctPrompts": 17,
+  "repeatedPoolSize": 5,
+  "repeatCounts": [
+    8,
+    6,
+    5,
+    4,
+    3
+  ],
+  "novelPromptCount": 12,
+  "expectedHits": 21,
+  "actualHits": 21,
+  "actualMisses": 17,
+  "hitRate": 0.5526315789473685,
+  "cacheStoreStats": {
+    "hits": 21,
+    "misses": 17,
+    "hitRate": 0.5526315789473685
+  },
+  "perRequest": [
+    {
+      "prompt": "What is the capital of France?",
+      "cacheHit": false
+    },
+    {
+      "prompt": "Novel one-off prompt number 10: give a one-word answer to 2+10.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "What is the chemical symbol for water?",
+      "cacheHit": false
+    },
+    {
+      "prompt": "Novel one-off prompt number 7: give a one-word answer to 2+7.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "Novel one-off prompt number 9: give a one-word answer to 2+9.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "Novel one-off prompt number 11: give a one-word answer to 2+11.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "Name one primary color.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "What is the chemical symbol for water?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "What is 12 times 12?",
+      "cacheHit": false
+    },
+    {
+      "prompt": "Novel one-off prompt number 0: give a one-word answer to 2+0.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "What is 12 times 12?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "Novel one-off prompt number 5: give a one-word answer to 2+5.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "What is 12 times 12?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "What is 12 times 12?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "What is the capital of France?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "What is the capital of France?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "What is 12 times 12?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "What is the chemical symbol for water?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "Name one primary color.",
+      "cacheHit": true
+    },
+    {
+      "prompt": "What is the capital of France?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "What is the capital of France?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "Novel one-off prompt number 4: give a one-word answer to 2+4.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "What is the chemical symbol for water?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "How many days are in a week?",
+      "cacheHit": false
+    },
+    {
+      "prompt": "What is 12 times 12?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "What is the capital of France?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "Novel one-off prompt number 8: give a one-word answer to 2+8.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "Name one primary color.",
+      "cacheHit": true
+    },
+    {
+      "prompt": "What is the capital of France?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "Name one primary color.",
+      "cacheHit": true
+    },
+    {
+      "prompt": "Novel one-off prompt number 6: give a one-word answer to 2+6.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "What is the capital of France?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "Novel one-off prompt number 3: give a one-word answer to 2+3.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "How many days are in a week?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "Name one primary color.",
+      "cacheHit": true
+    },
+    {
+      "prompt": "Novel one-off prompt number 1: give a one-word answer to 2+1.",
+      "cacheHit": false
+    },
+    {
+      "prompt": "How many days are in a week?",
+      "cacheHit": true
+    },
+    {
+      "prompt": "Novel one-off prompt number 2: give a one-word answer to 2+2.",
+      "cacheHit": false
+    }
+  ]
+}

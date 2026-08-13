@@ -1,0 +1,92 @@
+{
+  "measuredAt": "2026-08-13T09:13:20.436Z",
+  "requestCount": 9,
+  "completedCount": 9,
+  "skipped": [],
+  "rows": [
+    {
+      "provider": "groq",
+      "model": "llama-3.1-8b-instant",
+      "promptTokens": 46,
+      "completionTokens": 5,
+      "gatewayCostUsd": 0.0000027,
+      "recomputedCostUsd": 0.0000027000000000000004,
+      "absDiff": 4.235164736271502e-22
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-flash-lite-latest",
+      "promptTokens": 12,
+      "completionTokens": 4,
+      "gatewayCostUsd": 0.000013599999999999999,
+      "recomputedCostUsd": 0.0000136,
+      "absDiff": 1.6940658945086007e-21
+    },
+    {
+      "provider": "openrouter",
+      "model": "google/gemma-4-26b-a4b-it:free",
+      "promptTokens": 24,
+      "completionTokens": 4,
+      "gatewayCostUsd": 0,
+      "recomputedCostUsd": 0,
+      "absDiff": 0
+    },
+    {
+      "provider": "groq",
+      "model": "llama-3.1-8b-instant",
+      "promptTokens": 46,
+      "completionTokens": 6,
+      "gatewayCostUsd": 0.00000278,
+      "recomputedCostUsd": 0.0000027800000000000005,
+      "absDiff": 4.235164736271502e-22
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-flash-lite-latest",
+      "promptTokens": 12,
+      "completionTokens": 4,
+      "gatewayCostUsd": 0.000013599999999999999,
+      "recomputedCostUsd": 0.0000136,
+      "absDiff": 1.6940658945086007e-21
+    },
+    {
+      "provider": "openrouter",
+      "model": "google/gemma-4-26b-a4b-it:free",
+      "promptTokens": 24,
+      "completionTokens": 4,
+      "gatewayCostUsd": 0,
+      "recomputedCostUsd": 0,
+      "absDiff": 0
+    },
+    {
+      "provider": "groq",
+      "model": "llama-3.1-8b-instant",
+      "promptTokens": 46,
+      "completionTokens": 10,
+      "gatewayCostUsd": 0.0000031,
+      "recomputedCostUsd": 0.0000031000000000000004,
+      "absDiff": 4.235164736271502e-22
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-flash-lite-latest",
+      "promptTokens": 12,
+      "completionTokens": 4,
+      "gatewayCostUsd": 0.000013599999999999999,
+      "recomputedCostUsd": 0.0000136,
+      "absDiff": 1.6940658945086007e-21
+    },
+    {
+      "provider": "openrouter",
+      "model": "google/gemma-4-26b-a4b-it:free",
+      "promptTokens": 24,
+      "completionTokens": 4,
+      "gatewayCostUsd": 0,
+      "recomputedCostUsd": 0,
+      "absDiff": 0
+    }
+  ],
+  "maxAbsDiffUsd": 1.6940658945086007e-21,
+  "tolerancePassed": true,
+  "scope": "Validates gateway pricing arithmetic against provider-reported token usage, not against real provider billing invoices."
+}

@@ -1,0 +1,55 @@
+{
+  "measuredAt": "2026-08-13T09:13:32.769Z",
+  "provider": "groq",
+  "sampleCount": 15,
+  "direct": {
+    "p50": 137,
+    "p95": 330,
+    "avg": 164.86666666666667,
+    "samples": [
+      204,
+      123,
+      330,
+      170,
+      99,
+      114,
+      137,
+      105,
+      114,
+      232,
+      210,
+      214,
+      109,
+      207,
+      105
+    ]
+  },
+  "gateway": {
+    "p50": 121,
+    "p95": 246,
+    "avg": 141.4,
+    "samples": [
+      220,
+      121,
+      113,
+      121,
+      154,
+      109,
+      107,
+      157,
+      120,
+      125,
+      104,
+      98,
+      172,
+      246,
+      154
+    ]
+  },
+  "overheadMs": {
+    "p50": -16,
+    "p95": -84,
+    "avg": -23.46666666666667
+  },
+  "scope": "Local machine, real internet path to the provider, synthetic single-request-at-a-time measurement — not a production traffic pattern."
+}

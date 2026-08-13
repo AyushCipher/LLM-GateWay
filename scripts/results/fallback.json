@@ -1,0 +1,116 @@
+{
+  "measuredAt": "2026-08-13T09:11:08.851Z",
+  "primaryProvider": "groq",
+  "providersConfigured": [
+    "groq",
+    "gemini",
+    "openrouter"
+  ],
+  "requestCount": 10,
+  "baseline": {
+    "avgLatencyMs": 164,
+    "samples": [
+      293,
+      148,
+      154,
+      131,
+      144,
+      143,
+      137,
+      187,
+      172,
+      135
+    ]
+  },
+  "failover": {
+    "successCount": 10,
+    "failureCount": 0,
+    "avgLatencyMs": 828,
+    "samples": [
+      851,
+      816,
+      890,
+      728,
+      808,
+      842,
+      1024,
+      789,
+      811,
+      725
+    ],
+    "outcomes": [
+      {
+        "attempt": 0,
+        "succeeded": true,
+        "provider": "gemini",
+        "attempts": 2,
+        "latencyMs": 851
+      },
+      {
+        "attempt": 1,
+        "succeeded": true,
+        "provider": "gemini",
+        "attempts": 1,
+        "latencyMs": 816
+      },
+      {
+        "attempt": 2,
+        "succeeded": true,
+        "provider": "gemini",
+        "attempts": 1,
+        "latencyMs": 890
+      },
+      {
+        "attempt": 3,
+        "succeeded": true,
+        "provider": "gemini",
+        "attempts": 1,
+        "latencyMs": 728
+      },
+      {
+        "attempt": 4,
+        "succeeded": true,
+        "provider": "gemini",
+        "attempts": 1,
+        "latencyMs": 808
+      },
+      {
+        "attempt": 5,
+        "succeeded": true,
+        "provider": "gemini",
+        "attempts": 1,
+        "latencyMs": 842
+      },
+      {
+        "attempt": 6,
+        "succeeded": true,
+        "provider": "gemini",
+        "attempts": 1,
+        "latencyMs": 1024
+      },
+      {
+        "attempt": 7,
+        "succeeded": true,
+        "provider": "gemini",
+        "attempts": 2,
+        "latencyMs": 789
+      },
+      {
+        "attempt": 8,
+        "succeeded": true,
+        "provider": "gemini",
+        "attempts": 1,
+        "latencyMs": 811
+      },
+      {
+        "attempt": 9,
+        "succeeded": true,
+        "provider": "gemini",
+        "attempts": 1,
+        "latencyMs": 725
+      }
+    ]
+  },
+  "failoverOverheadMs": 664,
+  "note": "Baseline and failover requests use distinct prompts (cache effectively disabled, TTL=1s) so every request is a real provider call, not a cache hit."
+}

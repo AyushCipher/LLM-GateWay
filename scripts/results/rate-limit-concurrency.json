@@ -1,0 +1,42 @@
+{
+  "measuredAt": "2026-08-13T09:11:41.216Z",
+  "trials": [
+    {
+      "limit": 50,
+      "concurrency": 200,
+      "allowed": 50,
+      "rejected": 150,
+      "exact": true
+    },
+    {
+      "limit": 50,
+      "concurrency": 200,
+      "allowed": 50,
+      "rejected": 150,
+      "exact": true
+    },
+    {
+      "limit": 50,
+      "concurrency": 200,
+      "allowed": 50,
+      "rejected": 150,
+      "exact": true
+    },
+    {
+      "limit": 100,
+      "concurrency": 500,
+      "allowed": 100,
+      "rejected": 400,
+      "exact": true
+    },
+    {
+      "limit": 10,
+      "concurrency": 300,
+      "allowed": 10,
+      "rejected": 290,
+      "exact": true
+    }
+  ],
+  "allTrialsExact": true,
+  "note": "Each trial fires `concurrency` requests simultaneously via Promise.all against a single fresh key and asserts the allowed count equals the limit exactly, proving the check-and-increment Lua script has no race window."
+}

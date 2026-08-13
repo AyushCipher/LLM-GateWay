@@ -1,0 +1,162 @@
+openapi: 3.0.3
+info:
+  title: LLM Gateway API
+  version: 1.0.0
+  description: >
+    Multi-provider LLM routing gateway with fallback, exact-match caching,
+    cost tracking, per-key budgets, and atomic rate limiting.
+servers:
+  - url: http://localhost:8787
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: http
+      scheme: bearer
+      description: "API key issued via POST /v1/keys, sent as `Authorization: Bearer <key>`."
+    AdminSecret:
+      type: apiKey
+      in: header
+      name: X-Admin-Secret
+  schemas:
+    ChatMessage:
+      type: object
+      required: [role, content]
+      properties:
+        role: { type: string, enum: [system, user, assistant] }
+        content: { type: string }
+    ChatRequest:
+      type: object
+      required: [messages]
+      properties:
+        model: { type: string, default: "default", description: "Provider-specific model name, or 'default' to use each provider's configured default." }
+        messages:
+          type: array
+          items: { $ref: '#/components/schemas/ChatMessage' }
+        temperature: { type: number, minimum: 0, maximum: 2 }
+        maxTokens: { type: integer, minimum: 1, maximum: 4096 }
+        routingStrategy: { type: string, enum: [static_priority, latency_based] }
+    RouteAttempt:
+      type: object
+      properties:
+        provider: { type: string }
+        outcome: { type: string, enum: [success, error] }
+        latencyMs: { type: integer }
+        errorKind: { type: string }
+        errorMessage: { type: string }
+    ChatResponse:
+      type: object
+      properties:
+        id: { type: string, description: "Trace ID for this request" }
+        provider: { type: string }
+        model: { type: string }
+        content: { type: string }
+        usage:
+          type: object
+          properties:
+            promptTokens: { type: integer }
+            completionTokens: { type: integer }
+            totalTokens: { type: integer }
+        cacheHit: { type: boolean }
+        costUsd: { type: number }
+        latencyMs: { type: integer }
+        routing:
+          type: object
+          properties:
+            strategy: { type: string }
+            attempts:
+              type: array
+              items: { $ref: '#/components/schemas/RouteAttempt' }
+paths:
+  /health:
+    get:
+      summary: Liveness check
+      responses:
+        "200": { description: OK }
+  /v1/keys:
+    post:
+      summary: Create an API key (admin only)
+      security: [{ AdminSecret: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                budgetUsdMonthly: { type: number }
+                budgetMode: { type: string, enum: [hard_stop, soft_warn] }
+                requestsPerMinute: { type: integer }
+                tokensPerMinute: { type: integer }
+      responses:
+        "201":
+          description: Key created. The raw key is returned once and never stored.
+        "401": { description: Missing or invalid admin secret }
+  /v1/chat/completions:
+    post:
+      summary: Unified chat completion across all configured providers, with automatic fallback and caching.
+      security: [{ ApiKeyAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChatRequest' }
+      responses:
+        "200":
+          description: Successful completion (cache hit or live provider call)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChatResponse' }
+        "401": { description: Missing or invalid API key }
+        "402": { description: Budget cap exceeded (hard_stop mode) }
+        "429": { description: Rate limit exceeded (requests/min or tokens/min) }
+        "502": { description: All configured providers failed for this request }
+  /v1/usage:
+    get:
+      summary: Cumulative cost and token usage for the authenticated key over a time window
+      security: [{ ApiKeyAuth: [] }]
+      parameters:
+        - name: hours
+          in: query
+          schema: { type: integer, default: 720 }
+          description: Lookback window in hours (default 720 = 30 days)
+      responses:
+        "200": { description: Usage summary }
+  /metrics:
+    get:
+      summary: Prometheus-format metrics
+      responses:
+        "200": { description: text/plain Prometheus exposition format }
+  /metrics/json:
+    get:
+      summary: Cache hit-rate and per-provider latency percentiles as JSON
+      responses:
+        "200": { description: JSON metrics }
+  /admin/fault-injection:
+    post:
+      summary: Force a provider into a failure mode for testing fallback behavior (admin only)
+      security: [{ AdminSecret: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [provider, mode]
+              properties:
+                provider: { type: string, example: groq }
+                mode: { type: string, enum: [timeout, error_5xx, rate_limit, clear] }
+      responses:
+        "200": { description: Fault mode applied }
+  /admin/fault-injection/{provider}:
+    get:
+      summary: Read the currently forced fault mode for a provider (admin only)
+      security: [{ AdminSecret: [] }]
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Current fault mode }

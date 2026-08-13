@@ -1,0 +1,26 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: llm-gateway-redis
+    ports:
+      - "6389:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: llm-gateway-postgres
+    environment:
+      POSTGRES_USER: gateway
+      POSTGRES_PASSWORD: gateway
+      POSTGRES_DB: llm_gateway
+    ports:
+      - "5488:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gateway -d llm_gateway"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
