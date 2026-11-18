@@ -46,4 +46,17 @@ describe("cacheKeyFor", () => {
     const b = cacheKeyFor(req({ messages: [{ role: "user", content: "Goodbye there" }] }));
     expect(a).not.toBe(b);
   });
+
+  it("differs when maxTokens changes", () => {
+    expect(cacheKeyFor(req({ maxTokens: 100 }))).not.toBe(cacheKeyFor(req({ maxTokens: 900 })));
+  });
+
+  it("differs per tenant", () => {
+    expect(cacheKeyFor(req({ tenantId: "tenant-a" }))).not.toBe(cacheKeyFor(req({ tenantId: "tenant-b" })));
+    expect(cacheKeyFor(req({ tenantId: "tenant-a" }))).not.toBe(cacheKeyFor(req()));
+  });
+
+  it("differs when the model scope differs (default model is provider-specific)", () => {
+    expect(cacheKeyFor(req(), "default@groq:a")).not.toBe(cacheKeyFor(req(), "default@gemini:b"));
+  });
 });

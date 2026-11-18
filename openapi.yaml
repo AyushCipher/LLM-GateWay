@@ -92,10 +92,34 @@ paths:
                 budgetMode: { type: string, enum: [hard_stop, soft_warn] }
                 requestsPerMinute: { type: integer }
                 tokensPerMinute: { type: integer }
+                expiresAt: { type: string, format: date-time, description: "Optional expiry; requests with the key after this instant are rejected with 401." }
       responses:
         "201":
-          description: Key created. The raw key is returned once and never stored.
+          description: Key created. The raw key is returned once and never stored. Response includes id, name, budget and rate-limit settings, created_at and expires_at.
+        "400": { description: Invalid request body }
         "401": { description: Missing or invalid admin secret }
+  /v1/keys/{id}:
+    delete:
+      summary: Revoke an API key (admin only)
+      description: Sets revoked_at (idempotent; an already-revoked key keeps its original timestamp). The key stops authenticating immediately; the in-process auth cache entry is invalidated.
+      security: [{ AdminSecret: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Key revoked
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  revoked_at: { type: string, format: date-time }
+        "401": { description: Missing or invalid admin secret }
+        "404": { description: API key not found }
   /v1/chat/completions:
     post:
       summary: Unified chat completion across all configured providers, with automatic fallback and caching.
@@ -126,6 +150,16 @@ paths:
               schema: { type: string, description: "Newline-delimited `data: {...}` SSE events, see description." }
         "401": { description: Missing or invalid API key }
         "402": { description: Budget cap exceeded (hard_stop mode) }
+        "422":
+          description: The requested model (or a fallback candidate's resolved model) has no configured price, so cost cannot be reserved. Rejected before any rate-limit or budget quota is consumed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error: { type: string, example: "model has no configured price" }
+                  provider: { type: string }
+                  model: { type: string }
         "429": { description: Rate limit exceeded (requests/min or tokens/min) }
         "502": { description: All configured providers failed for this request (non-streaming only; the streaming equivalent is an SSE `error` event with a 200 status, since headers are already committed by the time routing can fail) }
   /v1/usage:
@@ -138,7 +172,23 @@ paths:
           schema: { type: integer, default: 720 }
           description: Lookback window in hours (default 720 = 30 days)
       responses:
-        "200": { description: Usage summary }
+        "200":
+          description: Usage summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  apiKeyId: { type: string, format: uuid }
+                  windowHours: { type: number }
+                  usage: { type: object, description: "Cumulative cost/token totals over the window" }
+                  budget:
+                    type: object
+                    properties:
+                      capUsdMonthly: { type: number }
+                      mode: { type: string, enum: [hard_stop, soft_warn] }
+                      currentMonthSpendUsd: { type: number, description: "Spend so far in the current budget period" }
+                      period: { type: string, description: "Budget period identifier (calendar month)" }
   /metrics:
     get:
       summary: Prometheus-format metrics

@@ -10,6 +10,8 @@ export interface UnifiedChatRequest {
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
+  /** api_keys.id of the caller. Namespaces every cache lookup/write; never forwarded to providers. */
+  tenantId?: string;
 }
 
 export interface TokenUsage {

@@ -8,6 +8,9 @@ export interface ApiKeyRecord {
   requests_per_minute: number;
   tokens_per_minute: number;
   created_at: string;
+  revoked_at?: string | null;
+  expires_at?: string | null;
+  last_used_at?: string | null;
 }
 
 declare global {

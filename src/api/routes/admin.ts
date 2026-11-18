@@ -1,6 +1,7 @@
 import { Router as ExpressRouter, Request, Response } from "express";
 import { z } from "zod";
 import type { Redis } from "ioredis";
+import { asyncHandler } from "../asyncHandler.js";
 import { setFault, getFault } from "../../providers/faultInjector.js";
 
 const faultSchema = z.object({
@@ -11,7 +12,7 @@ const faultSchema = z.object({
 export function createAdminRouter(redis: Redis): ExpressRouter {
   const router = ExpressRouter();
 
-  router.post("/admin/fault-injection", async (req: Request, res: Response) => {
+  router.post("/admin/fault-injection", asyncHandler(async (req: Request, res: Response) => {
     const parsed = faultSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "invalid request body", details: parsed.error.flatten() });
@@ -19,9 +20,9 @@ export function createAdminRouter(redis: Redis): ExpressRouter {
     }
     await setFault(redis, parsed.data.provider, parsed.data.mode);
     res.json({ provider: parsed.data.provider, mode: parsed.data.mode });
-  });
+  }));
 
-  router.get("/admin/fault-injection/:provider", async (req: Request, res: Response) => {
+  router.get("/admin/fault-injection/:provider", asyncHandler(async (req: Request, res: Response) => {
     const provider = req.params.provider;
     if (!provider) {
       res.status(400).json({ error: "provider param is required" });
@@ -29,7 +30,7 @@ export function createAdminRouter(redis: Redis): ExpressRouter {
     }
     const mode = await getFault(redis, provider);
     res.json({ provider, mode: mode ?? "clear" });
-  });
+  }));
 
   return router;
 }

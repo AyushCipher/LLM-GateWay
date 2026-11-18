@@ -17,8 +17,8 @@ export class CacheStore {
     private readonly ttlSeconds: number = env.CACHE_TTL_SECONDS,
   ) {}
 
-  async get(request: UnifiedChatRequest): Promise<UnifiedChatResponse | null> {
-    const key = cacheKeyFor(request);
+  async get(request: UnifiedChatRequest, modelScope?: string): Promise<UnifiedChatResponse | null> {
+    const key = cacheKeyFor(request, modelScope);
     const raw = await this.redis.get(key);
     if (!raw) {
       await this.redis.incr(STATS_MISSES_KEY);
@@ -29,8 +29,8 @@ export class CacheStore {
     return entry.response;
   }
 
-  async set(request: UnifiedChatRequest, response: UnifiedChatResponse): Promise<void> {
-    const key = cacheKeyFor(request);
+  async set(request: UnifiedChatRequest, response: UnifiedChatResponse, modelScope?: string): Promise<void> {
+    const key = cacheKeyFor(request, modelScope);
     const entry: CachedEntry = { response, cachedAt: new Date().toISOString() };
     await this.redis.set(key, JSON.stringify(entry), "EX", this.ttlSeconds);
   }

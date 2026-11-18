@@ -1,7 +1,7 @@
 import type pg from "pg";
 import { TokenUsage } from "../providers/types.js";
 
-export type RequestStatus = "success" | "error" | "budget_rejected" | "rate_limited";
+export type RequestStatus = "success" | "error" | "budget_rejected" | "rate_limited" | "aborted";
 
 export interface RecordRequestParams {
   traceId: string;
@@ -16,6 +16,10 @@ export interface RecordRequestParams {
   latencyMs: number;
   status: RequestStatus;
   error?: string;
+  /** true when only part of the response reached the client (stream died or client disconnected). */
+  partialOutput?: boolean;
+  /** true when token counts were estimated because the provider reported no usage. */
+  usageEstimated?: boolean;
 }
 
 export interface UsageSummary {
@@ -34,8 +38,8 @@ export class CostTracker {
     await this.pool.query(
       `INSERT INTO requests
         (trace_id, api_key_id, provider, model, routing_strategy, attempted_providers,
-         prompt_tokens, completion_tokens, total_tokens, cost_usd, cache_hit, latency_ms, status, error)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+         prompt_tokens, completion_tokens, total_tokens, cost_usd, cache_hit, latency_ms, status, error, partial_output, usage_estimated)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
       [
         p.traceId,
         p.apiKeyId,
@@ -51,6 +55,8 @@ export class CostTracker {
         p.latencyMs,
         p.status,
         p.error ?? null,
+        p.partialOutput ?? false,
+        p.usageEstimated ?? false,
       ],
     );
   }

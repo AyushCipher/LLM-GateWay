@@ -10,7 +10,10 @@ CREATE TABLE IF NOT EXISTS api_keys (
     budget_mode TEXT NOT NULL DEFAULT 'hard_stop' CHECK (budget_mode IN ('hard_stop', 'soft_warn')),
     requests_per_minute INTEGER NOT NULL,
     tokens_per_minute INTEGER NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    revoked_at TIMESTAMPTZ,
+    expires_at TIMESTAMPTZ,
+    last_used_at TIMESTAMPTZ
 );
 
 CREATE TABLE IF NOT EXISTS requests (
@@ -27,8 +30,10 @@ CREATE TABLE IF NOT EXISTS requests (
     cost_usd NUMERIC(14, 8) NOT NULL DEFAULT 0,
     cache_hit BOOLEAN NOT NULL DEFAULT false,
     latency_ms INTEGER NOT NULL DEFAULT 0,
-    status TEXT NOT NULL CHECK (status IN ('success', 'error', 'budget_rejected', 'rate_limited')),
+    status TEXT NOT NULL CHECK (status IN ('success', 'error', 'budget_rejected', 'rate_limited', 'aborted')),
     error TEXT,
+    partial_output BOOLEAN NOT NULL DEFAULT false,
+    usage_estimated BOOLEAN NOT NULL DEFAULT false,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -38,7 +43,10 @@ CREATE INDEX IF NOT EXISTS idx_requests_trace_id ON requests (trace_id);
 
 CREATE TABLE IF NOT EXISTS semantic_cache (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    api_key_id UUID NOT NULL,
     model TEXT NOT NULL,
+    temperature REAL NOT NULL,
+    max_tokens INTEGER NOT NULL,
     prompt_text TEXT NOT NULL,
     embedding VECTOR(768) NOT NULL,
     response_json JSONB NOT NULL,
@@ -49,3 +57,5 @@ CREATE TABLE IF NOT EXISTS semantic_cache (
 CREATE INDEX IF NOT EXISTS idx_semantic_cache_embedding_hnsw
     ON semantic_cache USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS idx_semantic_cache_model ON semantic_cache (model);
+-- idx_semantic_cache_tenant_lookup and idx_semantic_cache_expires_at live in migrations/001 (they reference
+-- columns that do not exist yet on databases created before tenant isolation).

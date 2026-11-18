@@ -11,6 +11,9 @@ import { Router } from "../src/routing/router.js";
 import { embedText } from "../src/providers/embeddings.js";
 import { env, providerPriority } from "../src/config/env.js";
 
+// Semantic entries are tenant-owned; the benchmark runs as one fixed synthetic tenant.
+const BENCH_TENANT_ID = "00000000-0000-0000-0000-00000000be0c";
+
 interface Topic {
   id: string;
   phrasings: string[];
@@ -96,7 +99,7 @@ async function run() {
     const expectedRepeat = item.topicId !== null && seenTopics.has(item.topicId);
     if (item.topicId) seenTopics.add(item.topicId);
 
-    const result = await router.route({ model: "default", messages: [{ role: "user", content: item.prompt }], maxTokens: 15 }, "static_priority");
+    const result = await router.route({ model: "default", messages: [{ role: "user", content: item.prompt }], maxTokens: 15, tenantId: BENCH_TENANT_ID }, "static_priority");
 
     if (result.cacheType === "exact") exactHits++;
     else if (result.cacheType === "semantic") semanticHits++;

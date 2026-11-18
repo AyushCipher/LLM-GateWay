@@ -1,12 +1,13 @@
 import { Router as ExpressRouter, Request, Response } from "express";
 import { CostTracker } from "../../cost/costTracker.js";
-import { BudgetEnforcer } from "../../cost/budget.js";
+import { BudgetEnforcer, budgetPeriod } from "../../cost/budget.js";
+import { asyncHandler } from "../asyncHandler.js";
 
 export function createUsageRouter(deps: { costTracker: CostTracker; budgetEnforcer: BudgetEnforcer }): ExpressRouter {
   const { costTracker, budgetEnforcer } = deps;
   const router = ExpressRouter();
 
-  router.get("/v1/usage", async (req: Request, res: Response) => {
+  router.get("/v1/usage", asyncHandler(async (req: Request, res: Response) => {
     const apiKey = req.apiKey!;
     const hours = Number(req.query.hours ?? 24 * 30);
 
@@ -22,10 +23,11 @@ export function createUsageRouter(deps: { costTracker: CostTracker; budgetEnforc
       budget: {
         capUsdMonthly: Number(apiKey.budget_usd_monthly),
         mode: apiKey.budget_mode,
-        currentRollingSpendUsd: currentSpend,
+        currentMonthSpendUsd: currentSpend,
+        period: budgetPeriod(),
       },
     });
-  });
+  }));
 
   return router;
 }

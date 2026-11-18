@@ -18,10 +18,26 @@ const PRICING_TABLE: Record<string, Record<string, ModelPricing>> = {
   },
 };
 
-const FALLBACK_PRICING: ModelPricing = { inputPerMillion: 0, outputPerMillion: 0 };
+/** Thrown instead of silently pricing an unknown model at $0 (which would make spend caps meaningless). */
+export class UnknownModelPricingError extends Error {
+  constructor(
+    public readonly provider: string,
+    public readonly model: string,
+  ) {
+    super(`No pricing configured for ${provider}/${model}; add it to PRICING_TABLE or call registerPricing()`);
+    this.name = "UnknownModelPricingError";
+  }
+}
+
+/** Explicitly price a model (e.g. at startup) rather than relying on a default. */
+export function registerPricing(provider: string, model: string, pricing: ModelPricing): void {
+  (PRICING_TABLE[provider] ??= {})[model] = pricing;
+}
 
 export function getPricing(provider: string, model: string): ModelPricing {
-  return PRICING_TABLE[provider]?.[model] ?? FALLBACK_PRICING;
+  const pricing = PRICING_TABLE[provider]?.[model];
+  if (!pricing) throw new UnknownModelPricingError(provider, model);
+  return pricing;
 }
 
 export function computeCostUsd(provider: string, model: string, usage: TokenUsage): number {
@@ -31,7 +47,18 @@ export function computeCostUsd(provider: string, model: string, usage: TokenUsag
   return inputCost + outputCost;
 }
 
-export function estimateRequestCostUsd(provider: string, model: string, estimatedTotalTokens: number): number {
-  const pricing = getPricing(provider, model);
-  return (estimatedTotalTokens / 1_000_000) * pricing.outputPerMillion;
+export interface PricingCandidate {
+  provider: string;
+  model: string;
+}
+
+/**
+ * Upper-bound reservation: the most expensive (input + output) price among every provider the request could
+ * fall back to, assuming the full prompt is billed as input and the full maxTokens as output.
+ * Throws UnknownModelPricingError if any candidate is unpriced (fail closed).
+ */
+export function estimateWorstCaseCostUsd(candidates: PricingCandidate[], promptTokens: number, maxCompletionTokens: number): number {
+  if (candidates.length === 0) throw new Error("estimateWorstCaseCostUsd: no candidate providers");
+  const usage: TokenUsage = { promptTokens, completionTokens: maxCompletionTokens, totalTokens: promptTokens + maxCompletionTokens };
+  return Math.max(...candidates.map((c) => computeCostUsd(c.provider, c.model, usage)));
 }

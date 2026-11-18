@@ -51,6 +51,8 @@ export function createApp(redis: Redis, pool: pg.Pool) {
           embed: (text: string) => embedText(env.GEMINI_API_KEY, env.EMBEDDING_MODEL, text),
         }
       : undefined;
+  // Expired rows are already ignored by reads; the sweep keeps the table and HNSW index from growing forever.
+  semanticCache?.store.startSweeper(env.SEMANTIC_CACHE_SWEEP_INTERVAL_MS, (err) => logger.warn({ err }, "semantic cache sweep failed"));
 
   const gatewayRouter = new GatewayRouter(registry, cacheStore, latencyTracker, healthTracker, strategies, semanticCache);
   const rateLimiter = new RateLimiter(redis);
